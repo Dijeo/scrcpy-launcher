@@ -4,6 +4,8 @@ A modern, dark-themed GUI launcher for [scrcpy](https://github.com/Genymobile/sc
 
 ![Scrcpy Launcher](Scrcpy_logo.svg.png)
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 *   **Auto-Update**: Automatically checks for and downloads the latest version of `scrcpy` from GitHub.

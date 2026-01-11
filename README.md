@@ -4,12 +4,14 @@ A modern, dark-themed GUI launcher for [scrcpy](https://github.com/Genymobile/sc
 
 ![Scrcpy Launcher](Scrcpy_logo.svg.png)
 
-![Screenshot](screenshot.png)
+![Main Interface](ss1.png)
+![Wireless Debugging](ss2.png)
 
 ## Features
 
 *   **Auto-Update**: Automatically checks for and downloads the latest version of `scrcpy` from GitHub.
 *   **Multi-Device Support**: View and control multiple connected devices simultaneously.
+*   **Wireless Debugging**: Pair and connect to devices wirelessly (Android 11+).
 *   **Visual Interface**:
     *   **Live Previews**: See a screenshot of each connected device.
     *   **Device Details**: Displays Model, Brand, Android Version, and Serial Number.
@@ -18,12 +20,24 @@ A modern, dark-themed GUI launcher for [scrcpy](https://github.com/Genymobile/sc
 
 ## Usage
 
+### USB Connection
 1.  Download the latest release or compile from source.
 2.  Run `LaunchScrcpy.exe`.
 3.  Connect your Android devices via USB (ensure USB Debugging is enabled).
 4.  The application will automatically detect devices and download `scrcpy` if needed.
 5.  Select the devices you want to control by clicking on their cards.
 6.  Click **LAUNCH SELECTED**.
+
+### Wireless Connection
+1.  Click the **WIRELESS** button in the top toolbar.
+2.  **Pairing (First time only):**
+    *   On your Android device (Android 11+), go to **Developer Options > Wireless debugging > Pair device with pairing code**.
+    *   Enter the IP, Port, and Pairing Code into the application.
+    *   Click **PAIR DEVICE**.
+3.  **Connecting:**
+    *   Enter the device IP and Port (found on the main Wireless debugging screen).
+    *   Click **CONNECT**.
+4.  Once connected, the device will appear in the main list.
 
 ## Building from Source
 

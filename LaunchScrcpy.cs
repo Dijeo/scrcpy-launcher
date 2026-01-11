@@ -41,6 +41,7 @@ namespace LaunchScrcpy
     {
         private FlowLayoutPanel flowPanel;
         private ModernButton btnRefresh;
+        private ModernButton btnWireless;
         private ModernButton btnLaunch;
         private Label lblStatus;
         private string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -142,15 +143,32 @@ namespace LaunchScrcpy
             spacer.Dock = DockStyle.Right;
             spacer.BackColor = Color.Transparent;
 
+            // Spacer 2
+            Panel spacer2 = new Panel();
+            spacer2.Width = 10;
+            spacer2.Dock = DockStyle.Right;
+            spacer2.BackColor = Color.Transparent;
+
+            btnWireless = new ModernButton();
+            btnWireless.Text = "WIRELESS";
+            btnWireless.Width = 120;
+            btnWireless.Height = 40;
+            btnWireless.Dock = DockStyle.Right;
+            btnWireless.BackColor = Color.FromArgb(60, 60, 60);
+            btnWireless.Click += new EventHandler(BtnWireless_Click);
+            btnWireless.Margin = new Padding(0, 5, 0, 0);
+
             // Container for buttons to align them
             Panel buttonPanel = new Panel();
             buttonPanel.Dock = DockStyle.Right;
-            buttonPanel.Width = 320;
+            buttonPanel.Width = 450;
             buttonPanel.Height = 50;
             buttonPanel.BackColor = Color.Transparent;
             buttonPanel.Controls.Add(btnLaunch);
             buttonPanel.Controls.Add(spacer);
             buttonPanel.Controls.Add(btnRefresh);
+            buttonPanel.Controls.Add(spacer2);
+            buttonPanel.Controls.Add(btnWireless);
             
             topPanel.Controls.Add(buttonPanel);
 
@@ -212,6 +230,23 @@ namespace LaunchScrcpy
 
         private void BtnRefresh_Click(object sender, EventArgs e)
         {
+            LoadDevices();
+        }
+
+        private void BtnWireless_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(ScrcpyPath)) 
+            {
+                MessageBox.Show("Scrcpy/ADB not found yet.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string adbPath = Path.Combine(ScrcpyPath, "adb.exe");
+            using (WirelessConnectForm form = new WirelessConnectForm(adbPath))
+            {
+                form.ShowDialog(this);
+            }
+            // Auto refresh after closing
             LoadDevices();
         }
 
@@ -534,6 +569,183 @@ namespace LaunchScrcpy
             Array.Sort(dirs);
             Array.Reverse(dirs);
             return dirs.Length > 0 ? dirs[0] : null;
+        }
+    }
+
+    public class WirelessConnectForm : Form
+    {
+        private string AdbPath;
+        private TextBox txtIp;
+        private TextBox txtPort;
+        private TextBox txtPairCode;
+        private TextBox txtConnectPort;
+        private Label lblStatus;
+
+        public WirelessConnectForm(string adbPath)
+        {
+            this.AdbPath = adbPath;
+            this.Text = "Wireless Debugging";
+            this.Size = new Size(400, 450);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.BackColor = Theme.BackDark;
+            this.ForeColor = Theme.TextWhite;
+            this.Font = Theme.FontNormal;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+
+            InitializeControls();
+        }
+
+        private void InitializeControls()
+        {
+            // Main Layout
+            FlowLayoutPanel mainPanel = new FlowLayoutPanel();
+            mainPanel.Dock = DockStyle.Fill;
+            mainPanel.FlowDirection = FlowDirection.TopDown;
+            mainPanel.Padding = new Padding(20);
+            mainPanel.WrapContents = false;
+            mainPanel.AutoScroll = true;
+
+            // --- PAIRING SECTION ---
+            Label lblPairHeader = new Label { Text = "1. Pair Device (Android 11+)", Font = Theme.FontTitle, AutoSize = true, Margin = new Padding(0, 0, 0, 10) };
+            
+            Label lblIp = new Label { Text = "IP Address:", AutoSize = true };
+            txtIp = new TextBox { Width = 340, BackColor = Theme.BackLight, ForeColor = Theme.TextWhite, BorderStyle = BorderStyle.FixedSingle };
+            
+            Label lblPort = new Label { Text = "Port:", AutoSize = true, Margin = new Padding(0, 5, 0, 0) };
+            txtPort = new TextBox { Width = 340, BackColor = Theme.BackLight, ForeColor = Theme.TextWhite, BorderStyle = BorderStyle.FixedSingle };
+            
+            Label lblCode = new Label { Text = "Pairing Code:", AutoSize = true, Margin = new Padding(0, 5, 0, 0) };
+            txtPairCode = new TextBox { Width = 340, BackColor = Theme.BackLight, ForeColor = Theme.TextWhite, BorderStyle = BorderStyle.FixedSingle };
+
+            ModernButton btnPair = new ModernButton { Text = "PAIR DEVICE", Width = 340, Height = 35, BackColor = Theme.Accent, Margin = new Padding(0, 15, 0, 0) };
+            btnPair.Click += BtnPair_Click;
+
+            // --- CONNECT SECTION ---
+            Label lblConnectHeader = new Label { Text = "2. Connect", Font = Theme.FontTitle, AutoSize = true, Margin = new Padding(0, 25, 0, 10) };
+            
+            Label lblConnectPort = new Label { Text = "Connect Port (Usually different):", AutoSize = true };
+            txtConnectPort = new TextBox { Width = 340, BackColor = Theme.BackLight, ForeColor = Theme.TextWhite, BorderStyle = BorderStyle.FixedSingle };
+
+            ModernButton btnConnect = new ModernButton { Text = "CONNECT", Width = 340, Height = 35, BackColor = Color.FromArgb(40, 167, 69), Margin = new Padding(0, 15, 0, 0) };
+            btnConnect.Click += BtnConnect_Click;
+
+            // --- STATUS ---
+            lblStatus = new Label { Text = "Ready", AutoSize = true, ForeColor = Theme.TextGray, Margin = new Padding(0, 15, 0, 0), MaximumSize = new Size(340, 0) };
+
+            mainPanel.Controls.AddRange(new Control[] { 
+                lblPairHeader, 
+                lblIp, txtIp, 
+                lblPort, txtPort, 
+                lblCode, txtPairCode, 
+                btnPair,
+                lblConnectHeader,
+                lblConnectPort, txtConnectPort,
+                btnConnect,
+                lblStatus
+            });
+
+            this.Controls.Add(mainPanel);
+        }
+
+        private void BtnPair_Click(object sender, EventArgs e)
+        {
+            string ip = txtIp.Text.Trim();
+            string port = txtPort.Text.Trim();
+            string code = txtPairCode.Text.Trim();
+
+            if (string.IsNullOrEmpty(ip) || string.IsNullOrEmpty(port) || string.IsNullOrEmpty(code))
+            {
+                lblStatus.Text = "Please enter IP, Port, and Pairing Code.";
+                lblStatus.ForeColor = Color.Red;
+                return;
+            }
+
+            lblStatus.Text = "Pairing...";
+            lblStatus.ForeColor = Theme.TextGray;
+            Application.DoEvents();
+
+            ThreadPool.QueueUserWorkItem(state => 
+            {
+                string result = RunAdbCommand(string.Format("pair {0}:{1} {2}", ip, port, code));
+                this.Invoke(new Action(() => 
+                {
+                    lblStatus.Text = result;
+                    lblStatus.ForeColor = result.Contains("Successfully paired") ? Color.LightGreen : Color.Red;
+                }));
+            });
+        }
+
+        private void BtnConnect_Click(object sender, EventArgs e)
+        {
+            string ip = txtIp.Text.Trim();
+            string port = txtConnectPort.Text.Trim();
+
+            if (string.IsNullOrEmpty(port))
+            {
+                // If user didn't enter connect port, try using the pairing port (unlikely to work for ADB wireless, but fallback) or just IP
+                 if (string.IsNullOrEmpty(ip))
+                {
+                    lblStatus.Text = "Please enter IP.";
+                    lblStatus.ForeColor = Color.Red;
+                    return;
+                }
+            }
+
+            string target = ip;
+            if (!string.IsNullOrEmpty(port)) target += ":" + port;
+
+            lblStatus.Text = "Connecting...";
+            lblStatus.ForeColor = Theme.TextGray;
+            Application.DoEvents();
+
+            ThreadPool.QueueUserWorkItem(state => 
+            {
+                string result = RunAdbCommand(string.Format("connect {0}", target));
+                this.Invoke(new Action(() => 
+                {
+                    lblStatus.Text = result;
+                    lblStatus.ForeColor = result.Contains("connected to") ? Color.LightGreen : Color.Red;
+                    
+                    if (result.Contains("connected to"))
+                    {
+                        // Optional: Close after delay?
+                        // Thread.Sleep(1000);
+                        // this.Invoke(new Action(() => this.Close()));
+                    }
+                }));
+            });
+        }
+
+        private string RunAdbCommand(string args)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = AdbPath,
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process p = Process.Start(psi))
+                {
+                    string output = p.StandardOutput.ReadToEnd();
+                    string error = p.StandardError.ReadToEnd();
+                    p.WaitForExit();
+
+                    if (!string.IsNullOrEmpty(output)) return output.Trim();
+                    return error.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                return "Error: " + ex.Message;
+            }
         }
     }
 
